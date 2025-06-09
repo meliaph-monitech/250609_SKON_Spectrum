@@ -12,7 +12,7 @@ st.title("🔍 Welding Spectrum Explorer")
 # --- Sidebar Configuration ---
 st.sidebar.header("Visualization Controls")
 
-num_rows_to_plot = st.sidebar.slider("Number of signal rows to overlay in line plot:", 1, 150, 10)
+num_rows_to_plot = st.sidebar.slider("Number of signal rows to overlay in line plot:", 1, 50, 10)
 show_mean_spectrum = st.sidebar.checkbox("Show Mean Spectrum Comparison", value=True)
 show_difference_plot = st.sidebar.checkbox("Show Difference Plot", value=True)
 show_heatmap = st.sidebar.checkbox("Show Heatmap", value=False)
@@ -59,21 +59,32 @@ def plot_heatmap_plotly(data, wavelengths, title):
     fig.update_layout(title=title)
     st.plotly_chart(fig, use_container_width=True)
 
-def plot_pca(ok_data, nok_data):
+def plot_pca_with_selection(ok_data, nok_data, wavelengths):
     combined = pd.concat([ok_data, nok_data], ignore_index=True)
     labels = np.array(["OK"] * len(ok_data) + ["NOK"] * len(nok_data))
 
     scaler = StandardScaler()
-    scaled = scaler.fit_transform(combined.fillna(0))  # Replace NaNs if any
+    scaled = scaler.fit_transform(combined.fillna(0))
 
     pca = PCA(n_components=2)
     pcs = pca.fit_transform(scaled)
 
     df_pca = pd.DataFrame(pcs, columns=["PC1", "PC2"])
     df_pca["Label"] = labels
+    df_pca["Index"] = df_pca.index
 
-    fig = px.scatter(df_pca, x="PC1", y="PC2", color="Label", title="PCA Projection of OK vs NOK Spectra")
-    st.plotly_chart(fig, use_container_width=True)
+    fig = px.scatter(df_pca, x="PC1", y="PC2", color="Label", hover_data=["Index"])
+    selected = st.plotly_chart(fig, use_container_width=True)
+
+    selected_indices = st.multiselect("Select rows to visualize their spectra:", options=df_pca["Index"].tolist())
+    if selected_indices:
+        fig_spectra = go.Figure()
+        for idx in selected_indices:
+            row = combined.iloc[idx]
+            label = labels[idx]
+            fig_spectra.add_trace(go.Scatter(x=wavelengths, y=row, mode='lines', name=f"{label} {idx}"))
+        fig_spectra.update_layout(title="Spectra of Selected PCA Points", xaxis_title="Wavelength (nm)", yaxis_title="Signal Intensity")
+        st.plotly_chart(fig_spectra, use_container_width=True)
 
 def show_single_weld_plot(wavelengths, data, label):
     idx = st.sidebar.slider(f"Select a specific {label} row to inspect:", 0, len(data)-1, 0)
@@ -111,9 +122,9 @@ if uploaded_ok and uploaded_nok:
         plot_heatmap_plotly(data_nok, wavelengths, "NOK Welding Heatmap")
 
     if show_pca:
-        st.subheader("PCA Dimensionality Reduction")
+        st.subheader("PCA Dimensionality Reduction with Interactive Selection")
         try:
-            plot_pca(data_ok, data_nok)
+            plot_pca_with_selection(data_ok, data_nok, wavelengths)
         except Exception as e:
             st.error(f"PCA failed: {e}")
 
