@@ -17,6 +17,10 @@ show_mean_spectrum = st.sidebar.checkbox("Show Mean Spectrum Comparison", value=
 show_difference_plot = st.sidebar.checkbox("Show Difference Plot", value=True)
 show_heatmap = st.sidebar.checkbox("Show Heatmap", value=False)
 show_pca = st.sidebar.checkbox("Show PCA Projection", value=False)
+show_band_integration = st.sidebar.checkbox("Show Band Integration Tool", value=False)
+
+band_start = st.sidebar.number_input("Band Start Wavelength (nm)", value=900.0)
+band_end = st.sidebar.number_input("Band End Wavelength (nm)", value=1100.0)
 
 uploaded_ok = st.sidebar.file_uploader("Upload OK Welding CSV", type="csv")
 uploaded_nok = st.sidebar.file_uploader("Upload NOK Welding CSV", type="csv")
@@ -59,6 +63,19 @@ def plot_heatmap_plotly(data, wavelengths, title):
     fig.update_layout(title=title)
     st.plotly_chart(fig, use_container_width=True)
 
+def plot_band_integration(wavelengths, data_ok, data_nok, band_start, band_end):
+    band_mask = (wavelengths >= band_start) & (wavelengths <= band_end)
+    auc_ok = data_ok.iloc[:, band_mask].sum(axis=1)
+    auc_nok = data_nok.iloc[:, band_mask].sum(axis=1)
+
+    df_auc = pd.DataFrame({
+        "AUC": np.concatenate([auc_ok, auc_nok]),
+        "Label": ["OK"]*len(auc_ok) + ["NOK"]*len(auc_nok)
+    })
+    fig = px.violin(df_auc, y="AUC", color="Label", box=True, points="all")
+    fig.update_layout(title=f"AUC Comparison for Band {band_start}-{band_end} nm")
+    st.plotly_chart(fig, use_container_width=True)
+
 def plot_pca_with_selection(ok_data, nok_data, wavelengths):
     combined = pd.concat([ok_data, nok_data], ignore_index=True)
     labels = np.array(["OK"] * len(ok_data) + ["NOK"] * len(nok_data))
@@ -74,7 +91,7 @@ def plot_pca_with_selection(ok_data, nok_data, wavelengths):
     df_pca["Index"] = df_pca.index
 
     fig = px.scatter(df_pca, x="PC1", y="PC2", color="Label", hover_data=["Index"])
-    selected = st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
     selected_indices = st.multiselect("Select rows to visualize their spectra:", options=df_pca["Index"].tolist())
     if selected_indices:
@@ -127,6 +144,10 @@ if uploaded_ok and uploaded_nok:
             plot_pca_with_selection(data_ok, data_nok, wavelengths)
         except Exception as e:
             st.error(f"PCA failed: {e}")
+
+    if show_band_integration:
+        st.subheader("AUC over Custom Wavelength Band")
+        plot_band_integration(wavelengths, data_ok, data_nok, band_start, band_end)
 
     st.subheader("🔍 Explore Individual Weldings")
     show_single_weld_plot(wavelengths, data_ok, "OK")
