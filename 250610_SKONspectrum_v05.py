@@ -17,6 +17,7 @@ show_difference_plot = st.sidebar.checkbox("Show Difference Plot", value=True)
 show_heatmap = st.sidebar.checkbox("Show Heatmap", value=False)
 show_time_series = st.sidebar.checkbox("Explore Signal Evolution Over Time", value=False)
 show_classic_spectrogram = st.sidebar.checkbox("Show Classic Spectrogram (2D Heatmap)", value=False)
+show_freq_spectrogram = st.sidebar.checkbox("Show Spectrogram with Frequency (THz)", value=False)
 
 
 band_start = st.sidebar.number_input("Band Start Wavelength (nm)", value=900.0)
@@ -96,6 +97,12 @@ def plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths):
         fig.add_trace(go.Scatter(y=data_nok.iloc[:, idx], mode='lines', name=f"NOK {wl} nm", line=dict(color='red')))
     fig.update_layout(title="Signal Intensity Over Time", xaxis_title="Time Index", yaxis_title="Intensity")
     st.plotly_chart(fig, use_container_width=True)
+
+def wavelength_to_freq_nm(wavelength_nm):
+    c = 3e8  # speed of light in m/s
+    wavelength_m = np.array(wavelength_nm) * 1e-9
+    freq_hz = c / wavelength_m
+    return freq_hz / 1e12  # Convert to THz for readability
 
 # --- Main Content ---
 if uploaded_ok and uploaded_nok:
@@ -183,6 +190,28 @@ if uploaded_ok and uploaded_nok:
             title="Spectrogram (Time vs Wavelength)",
             xaxis_title="Time Index",
             yaxis_title="Wavelength (nm)",
+            height=500
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    if show_freq_spectrogram:
+        st.subheader("📊 Spectrogram Style with Frequency Axis (Time vs Frequency)")
+    
+        combined = pd.concat([data_ok, data_nok], axis=0).reset_index(drop=True)
+        z_data = combined.values.T
+        freq_thz = wavelength_to_freq_nm(wavelengths)
+    
+        fig = px.imshow(
+            z_data,
+            labels=dict(x="Time Index", y="Frequency (THz)", color="Intensity"),
+            x=np.arange(z_data.shape[1]),
+            y=np.round(freq_thz, 2),
+            color_continuous_scale="Turbo"
+        )
+        fig.update_layout(
+            title="Spectrogram (Time vs Frequency)",
+            xaxis_title="Time Index",
+            yaxis_title="Frequency (THz)",
             height=500
         )
         st.plotly_chart(fig, use_container_width=True)
