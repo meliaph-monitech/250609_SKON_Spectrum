@@ -181,6 +181,7 @@ if uploaded_ok and uploaded_nok:
     
         fig = px.imshow(
             z_data,
+            aspect="auto",
             labels=dict(x="Time Index", y="Wavelength (nm)", color="Intensity"),
             x=np.arange(z_data.shape[1]),  # time
             y=wavelengths,
@@ -203,6 +204,7 @@ if uploaded_ok and uploaded_nok:
     
         fig = px.imshow(
             z_data,
+            aspect="auto",
             labels=dict(x="Time Index", y="Frequency (THz)", color="Intensity"),
             x=np.arange(z_data.shape[1]),
             y=np.round(freq_thz, 2),
