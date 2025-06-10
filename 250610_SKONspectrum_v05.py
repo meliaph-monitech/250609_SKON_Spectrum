@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from statsmodels.tsa.seasonal import seasonal_decompose
 
 st.set_page_config(page_title="Welding Spectrum Explorer", layout="wide")
 st.title("🔍 Welding Spectrum Explorer")
@@ -17,10 +15,9 @@ num_rows_to_plot = st.sidebar.slider("Number of signal rows to overlay in line p
 show_mean_spectrum = st.sidebar.checkbox("Show Mean Spectrum Comparison", value=True)
 show_difference_plot = st.sidebar.checkbox("Show Difference Plot", value=True)
 show_heatmap = st.sidebar.checkbox("Show Heatmap", value=False)
-show_pca = st.sidebar.checkbox("Show PCA Projection", value=False)
-show_band_integration = st.sidebar.checkbox("Show Band Integration Tool", value=False)
 show_time_series = st.sidebar.checkbox("Explore Signal Evolution Over Time", value=False)
 show_classic_spectrogram = st.sidebar.checkbox("Show Classic Spectrogram (2D Heatmap)", value=False)
+
 
 band_start = st.sidebar.number_input("Band Start Wavelength (nm)", value=900.0)
 band_end = st.sidebar.number_input("Band End Wavelength (nm)", value=1100.0)
@@ -48,16 +45,25 @@ def plot_line_overlay_plotly(wavelengths, data_ok, data_nok, num_lines):
     fig.update_layout(title="Line Overlay Plot", xaxis_title="Wavelength (nm)", yaxis_title="Signal Intensity")
     st.plotly_chart(fig, use_container_width=True)
 
-def plot_3d_overlay(wavelengths, data, label):
-    time_steps = np.arange(len(data))
+def plot_3d_combined_lines(wavelengths, data_ok, data_nok):
     fig = go.Figure()
-    for t in time_steps:
-        fig.add_trace(go.Scatter3d(x=wavelengths, y=[t]*len(wavelengths), z=data.iloc[t], mode='lines', name=f"{label} {t}"))
-    fig.update_layout(title=f"3D Spectrum Over Time - {label}", scene=dict(
-        xaxis_title='Wavelength (nm)',
-        yaxis_title='Time Index',
-        zaxis_title='Signal Intensity'),
-        showlegend=False)
+    for i in range(len(data_ok)):
+        fig.add_trace(go.Scatter3d(x=wavelengths, y=[i]*len(wavelengths), z=data_ok.iloc[i], mode='lines', line=dict(color='green'), name=f'OK {i}'))
+    for i in range(len(data_nok)):
+        fig.add_trace(go.Scatter3d(x=wavelengths, y=[i]*len(wavelengths), z=data_nok.iloc[i], mode='lines', line=dict(color='red'), name=f'NOK {i}'))
+    fig.update_layout(title="3D Line Plot: OK and NOK Combined", scene=dict(xaxis_title='Wavelength', yaxis_title='Time Index', zaxis_title='Intensity'))
+    st.plotly_chart(fig, use_container_width=True)
+
+def plot_surface(data, wavelengths, title):
+    fig = go.Figure(data=[go.Surface(z=data.values, x=wavelengths, y=np.arange(len(data)))])
+    fig.update_layout(title=title, scene=dict(xaxis_title='Wavelength', yaxis_title='Time Index', zaxis_title='Intensity'))
+    st.plotly_chart(fig, use_container_width=True)
+
+def plot_difference_surface(data_ok, data_nok, wavelengths):
+    min_len = min(len(data_ok), len(data_nok))
+    diff = data_nok.iloc[:min_len].values - data_ok.iloc[:min_len].values
+    fig = go.Figure(data=[go.Surface(z=diff, x=wavelengths, y=np.arange(min_len))])
+    fig.update_layout(title="Difference Surface (NOK - OK)", scene=dict(xaxis_title='Wavelength', yaxis_title='Time Index', zaxis_title='Intensity Difference'))
     st.plotly_chart(fig, use_container_width=True)
 
 def plot_mean_comparison_plotly(wavelengths, mean_ok, mean_nok):
@@ -91,53 +97,6 @@ def plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths):
     fig.update_layout(title="Signal Intensity Over Time", xaxis_title="Time Index", yaxis_title="Intensity")
     st.plotly_chart(fig, use_container_width=True)
 
-def plot_band_integration(wavelengths, data_ok, data_nok, band_start, band_end):
-    band_mask = (wavelengths >= band_start) & (wavelengths <= band_end)
-    auc_ok = data_ok.iloc[:, band_mask].sum(axis=1)
-    auc_nok = data_nok.iloc[:, band_mask].sum(axis=1)
-
-    df_auc = pd.DataFrame({
-        "AUC": np.concatenate([auc_ok, auc_nok]),
-        "Label": ["OK"]*len(auc_ok) + ["NOK"]*len(auc_nok)
-    })
-    fig = px.violin(df_auc, y="AUC", color="Label", box=True, points="all")
-    fig.update_layout(title=f"AUC Comparison for Band {band_start}-{band_end} nm")
-    st.plotly_chart(fig, use_container_width=True)
-
-def plot_pca_with_selection(ok_data, nok_data, wavelengths):
-    combined = pd.concat([ok_data, nok_data], ignore_index=True)
-    labels = np.array(["OK"] * len(ok_data) + ["NOK"] * len(nok_data))
-
-    scaler = StandardScaler()
-    scaled = scaler.fit_transform(combined.fillna(0))
-
-    pca = PCA(n_components=2)
-    pcs = pca.fit_transform(scaled)
-
-    df_pca = pd.DataFrame(pcs, columns=["PC1", "PC2"])
-    df_pca["Label"] = labels
-    df_pca["Index"] = df_pca.index
-
-    fig = px.scatter(df_pca, x="PC1", y="PC2", color="Label", hover_data=["Index"])
-    st.plotly_chart(fig, use_container_width=True)
-
-    selected_indices = st.multiselect("Select rows to visualize their spectra:", options=df_pca["Index"].tolist())
-    if selected_indices:
-        fig_spectra = go.Figure()
-        for idx in selected_indices:
-            row = combined.iloc[idx]
-            label = labels[idx]
-            fig_spectra.add_trace(go.Scatter(x=wavelengths, y=row, mode='lines', name=f"{label} {idx}"))
-        fig_spectra.update_layout(title="Spectra of Selected PCA Points", xaxis_title="Wavelength (nm)", yaxis_title="Signal Intensity")
-        st.plotly_chart(fig_spectra, use_container_width=True)
-
-def show_single_weld_plot(wavelengths, data, label):
-    idx = st.sidebar.slider(f"Select a specific {label} row to inspect:", 0, len(data)-1, 0)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=wavelengths, y=data.iloc[idx], mode='lines', name=f"{label} Row {idx}"))
-    fig.update_layout(title=f"Single Welding Spectrum from {label} Data (Row {idx})", xaxis_title="Wavelength (nm)", yaxis_title="Signal Intensity")
-    st.plotly_chart(fig, use_container_width=True)
-
 # --- Main Content ---
 if uploaded_ok and uploaded_nok:
     wavelengths_ok, data_ok_raw = load_spectral_csv(uploaded_ok)
@@ -153,9 +112,17 @@ if uploaded_ok and uploaded_nok:
     st.subheader("Line Overlay Plot of Spectral Data")
     plot_line_overlay_plotly(wavelengths, data_ok, data_nok, num_rows_to_plot)
 
-    st.subheader("3D Spectrum View Over Time")
-    plot_3d_overlay(wavelengths, data_ok, "OK")
-    plot_3d_overlay(wavelengths, data_nok, "NOK")
+    st.subheader("3D Combined Line Plot: OK and NOK")
+    plot_3d_combined_lines(wavelengths, data_ok, data_nok)
+
+    st.subheader("3D Surface Plot - OK")
+    plot_surface(data_ok, wavelengths, "Surface - OK")
+
+    st.subheader("3D Surface Plot - NOK")
+    plot_surface(data_nok, wavelengths, "Surface - NOK")
+
+    st.subheader("3D Difference Surface (NOK - OK)")
+    plot_difference_surface(data_ok, data_nok, wavelengths)
 
     if show_mean_spectrum:
         st.subheader("Mean Spectrum Comparison")
@@ -172,26 +139,11 @@ if uploaded_ok and uploaded_nok:
         plot_heatmap_plotly(data_ok, wavelengths, "OK Welding Heatmap")
         plot_heatmap_plotly(data_nok, wavelengths, "NOK Welding Heatmap")
 
-    if show_pca:
-        st.subheader("PCA Dimensionality Reduction with Interactive Selection")
-        try:
-            plot_pca_with_selection(data_ok, data_nok, wavelengths)
-        except Exception as e:
-            st.error(f"PCA failed: {e}")
-
-    if show_band_integration:
-        st.subheader("AUC over Custom Wavelength Band")
-        plot_band_integration(wavelengths, data_ok, data_nok, band_start, band_end)
-
     if show_time_series:
         st.subheader("Signal Evolution Over Time at Specific Wavelengths")
         unique_wavelengths = list(np.round(wavelengths, 2))
         selected_wavelengths = st.multiselect("Select Wavelengths to Track Over Time", options=unique_wavelengths, default=[unique_wavelengths[0]])
         plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
-
-    st.subheader("🔍 Explore Individual Weldings")
-    show_single_weld_plot(wavelengths, data_ok, "OK")
-    show_single_weld_plot(wavelengths, data_nok, "NOK")
 
     if show_classic_spectrogram:
         st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
@@ -200,8 +152,7 @@ if uploaded_ok and uploaded_nok:
             data_ok.assign(Label='OK'),
             data_nok.assign(Label='NOK')
         ], axis=0).reset_index(drop=True)
-        labels = ['OK'] * len(data_ok) + ['NOK'] * len(data_nok)
-    
+        
         fig = px.imshow(
             avg_data.values,
             labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
@@ -216,6 +167,5 @@ if uploaded_ok and uploaded_nok:
             height=500
         )
         st.plotly_chart(fig, use_container_width=True)
-
 else:
     st.info("Please upload both OK and NOK welding CSV files to begin analysis.")
