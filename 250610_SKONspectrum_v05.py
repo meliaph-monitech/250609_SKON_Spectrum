@@ -194,28 +194,28 @@ if uploaded_ok and uploaded_nok:
     show_single_weld_plot(wavelengths, data_nok, "NOK")
 
     if show_classic_spectrogram:
-    st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
+        st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
+        
+        avg_data = pd.concat([
+            data_ok.assign(Label='OK'),
+            data_nok.assign(Label='NOK')
+        ], axis=0).reset_index(drop=True)
+        labels = ['OK'] * len(data_ok) + ['NOK'] * len(data_nok)
     
-    avg_data = pd.concat([
-        data_ok.assign(Label='OK'),
-        data_nok.assign(Label='NOK')
-    ], axis=0).reset_index(drop=True)
-    labels = ['OK'] * len(data_ok) + ['NOK'] * len(data_nok)
-
-    fig = px.imshow(
-        avg_data.values,
-        labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
-        x=wavelengths,
-        y=np.arange(len(avg_data)),
-        color_continuous_scale="Turbo"
-    )
-    fig.update_layout(
-        title="Combined Spectrogram (OK and NOK)",
-        xaxis_title="Wavelength (nm)",
-        yaxis_title="Time Index",
-        height=500
-    )
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.imshow(
+            avg_data.values,
+            labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
+            x=wavelengths,
+            y=np.arange(len(avg_data)),
+            color_continuous_scale="Turbo"
+        )
+        fig.update_layout(
+            title="Combined Spectrogram (OK and NOK)",
+            xaxis_title="Wavelength (nm)",
+            yaxis_title="Time Index",
+            height=500
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.info("Please upload both OK and NOK welding CSV files to begin analysis.")
