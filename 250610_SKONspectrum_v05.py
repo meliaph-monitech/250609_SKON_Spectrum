@@ -148,9 +148,48 @@ if uploaded_ok and uploaded_nok:
 
     if show_time_series:
         st.subheader("Signal Evolution Over Time at Specific Wavelengths")
+    
         unique_wavelengths = list(np.round(wavelengths, 2))
-        selected_wavelengths = st.multiselect("Select Wavelengths to Track Over Time", options=unique_wavelengths, default=[unique_wavelengths[0]])
-        plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
+        selected_wavelengths = st.multiselect(
+            "Select Wavelengths to Track Over Time",
+            options=unique_wavelengths,
+            default=[unique_wavelengths[0]]
+        )
+    
+        agg_option = st.radio("Aggregation Method", options=["Individual", "Mean", "Sum"], horizontal=True)
+    
+        if selected_wavelengths:
+            if agg_option == "Individual":
+                plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
+            else:
+                # Determine column indices for selected wavelengths
+                selected_indices = [np.argmin(np.abs(wavelengths - wl)) for wl in selected_wavelengths]
+    
+                if agg_option == "Mean":
+                    ok_series = data_ok.iloc[:, selected_indices].mean(axis=1)
+                    nok_series = data_nok.iloc[:, selected_indices].mean(axis=1)
+                    label = "Mean"
+                elif agg_option == "Sum":
+                    ok_series = data_ok.iloc[:, selected_indices].sum(axis=1)
+                    nok_series = data_nok.iloc[:, selected_indices].sum(axis=1)
+                    label = "Sum"
+    
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(y=ok_series, mode='lines', name=f"OK {label}", line=dict(color='green')))
+                fig.add_trace(go.Scatter(y=nok_series, mode='lines', name=f"NOK {label}", line=dict(color='red')))
+                fig.update_layout(
+                    title=f"{label} of Selected Wavelengths Over Time",
+                    xaxis_title="Time Index",
+                    yaxis_title="Intensity"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+
+    # if show_time_series:
+    #     st.subheader("Signal Evolution Over Time at Specific Wavelengths")
+    #     unique_wavelengths = list(np.round(wavelengths, 2))
+    #     selected_wavelengths = st.multiselect("Select Wavelengths to Track Over Time", options=unique_wavelengths, default=[unique_wavelengths[0]])
+    #     plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
 
     # if show_classic_spectrogram:
     #     st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
