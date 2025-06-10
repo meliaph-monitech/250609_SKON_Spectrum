@@ -145,22 +145,44 @@ if uploaded_ok and uploaded_nok:
         selected_wavelengths = st.multiselect("Select Wavelengths to Track Over Time", options=unique_wavelengths, default=[unique_wavelengths[0]])
         plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
 
+    # if show_classic_spectrogram:
+    #     st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
+    
+    #     combined = pd.concat([data_ok, data_nok], axis=0).reset_index(drop=True)
+    
+    #     fig = px.imshow(
+    #         combined.values,
+    #         labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
+    #         x=wavelengths,
+    #         y=np.arange(len(combined)),
+    #         color_continuous_scale="Turbo"
+    #     )
+    #     fig.update_layout(
+    #         title="Combined Spectrogram (OK and NOK)",
+    #         xaxis_title="Wavelength (nm)",
+    #         yaxis_title="Time Index",
+    #         height=500
+    #     )
+    #     st.plotly_chart(fig, use_container_width=True)
+
     if show_classic_spectrogram:
-        st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
+        st.subheader("📊 Classic Spectrogram Style (Time vs Wavelength)")
     
         combined = pd.concat([data_ok, data_nok], axis=0).reset_index(drop=True)
     
+        z_data = combined.values.T  # Transpose so time = X-axis, wavelength = Y-axis
+    
         fig = px.imshow(
-            combined.values,
-            labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
-            x=wavelengths,
-            y=np.arange(len(combined)),
+            z_data,
+            labels=dict(x="Time Index", y="Wavelength (nm)", color="Intensity"),
+            x=np.arange(z_data.shape[1]),  # time
+            y=wavelengths,
             color_continuous_scale="Turbo"
         )
         fig.update_layout(
-            title="Combined Spectrogram (OK and NOK)",
-            xaxis_title="Wavelength (nm)",
-            yaxis_title="Time Index",
+            title="Spectrogram (Time vs Wavelength)",
+            xaxis_title="Time Index",
+            yaxis_title="Wavelength (nm)",
             height=500
         )
         st.plotly_chart(fig, use_container_width=True)
