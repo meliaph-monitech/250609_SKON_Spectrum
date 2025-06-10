@@ -11,7 +11,7 @@ st.title("🔍 Welding Spectrum Explorer")
 # --- Sidebar Configuration ---
 st.sidebar.header("Visualization Controls")
 
-num_rows_to_plot = st.sidebar.slider("Number of signal rows to overlay in line plot:", 1, 150, 10)
+num_rows_to_plot = st.sidebar.slider("Number of signal rows to overlay in line plot:", 1, 150, 150)
 show_mean_spectrum = st.sidebar.checkbox("Show Mean Spectrum Comparison", value=True)
 show_difference_plot = st.sidebar.checkbox("Show Difference Plot", value=True)
 show_heatmap = st.sidebar.checkbox("Show Heatmap", value=False)
