@@ -147,17 +147,14 @@ if uploaded_ok and uploaded_nok:
 
     if show_classic_spectrogram:
         st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
-        
-        avg_data = pd.concat([
-            data_ok.assign(Label='OK'),
-            data_nok.assign(Label='NOK')
-        ], axis=0).reset_index(drop=True)
-        
+    
+        combined = pd.concat([data_ok, data_nok], axis=0).reset_index(drop=True)
+    
         fig = px.imshow(
-            avg_data.values,
+            combined.values,
             labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
             x=wavelengths,
-            y=np.arange(len(avg_data)),
+            y=np.arange(len(combined)),
             color_continuous_scale="Turbo"
         )
         fig.update_layout(
