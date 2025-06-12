@@ -20,8 +20,8 @@ show_classic_spectrogram = st.sidebar.checkbox("Show Classic Spectrogram (2D Hea
 show_freq_spectrogram = st.sidebar.checkbox("Show Spectrogram with Frequency (THz)", value=False)
 
 
-band_start = st.sidebar.number_input("Band Start Wavelength (nm)", value=900.0)
-band_end = st.sidebar.number_input("Band End Wavelength (nm)", value=1100.0)
+band_start = st.sidebar.number_input("Band Start Wavelength (nm)", value=500.0)
+band_end = st.sidebar.number_input("Band End Wavelength (nm)", value=900.0)
 
 uploaded_ok = st.sidebar.file_uploader("Upload OK Welding CSV", type="csv")
 uploaded_nok = st.sidebar.file_uploader("Upload NOK Welding CSV", type="csv")
