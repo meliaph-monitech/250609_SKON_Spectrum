@@ -184,33 +184,6 @@ if uploaded_ok and uploaded_nok:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-
-    # if show_time_series:
-    #     st.subheader("Signal Evolution Over Time at Specific Wavelengths")
-    #     unique_wavelengths = list(np.round(wavelengths, 2))
-    #     selected_wavelengths = st.multiselect("Select Wavelengths to Track Over Time", options=unique_wavelengths, default=[unique_wavelengths[0]])
-    #     plot_time_series(data_ok, data_nok, wavelengths, selected_wavelengths)
-
-    # if show_classic_spectrogram:
-    #     st.subheader("📊 Classic Spectrogram Style (2D Heatmap)")
-    
-    #     combined = pd.concat([data_ok, data_nok], axis=0).reset_index(drop=True)
-    
-    #     fig = px.imshow(
-    #         combined.values,
-    #         labels=dict(x="Wavelength Index", y="Sample Index", color="Intensity"),
-    #         x=wavelengths,
-    #         y=np.arange(len(combined)),
-    #         color_continuous_scale="Turbo"
-    #     )
-    #     fig.update_layout(
-    #         title="Combined Spectrogram (OK and NOK)",
-    #         xaxis_title="Wavelength (nm)",
-    #         yaxis_title="Time Index",
-    #         height=500
-    #     )
-    #     st.plotly_chart(fig, use_container_width=True)
-
     if show_classic_spectrogram:
         st.subheader("📊 Classic Spectrogram Style (Time vs Wavelength)")
     
