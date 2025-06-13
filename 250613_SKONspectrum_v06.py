@@ -150,12 +150,33 @@ if uploaded_ok and uploaded_nok:
         st.subheader("Signal Evolution Over Time at Specific Wavelengths")
     
         unique_wavelengths = list(np.round(wavelengths, 2))
-        selected_wavelengths = st.multiselect(
-            "Select Wavelengths to Track Over Time",
-            options=unique_wavelengths,
-            default=[unique_wavelengths[0]]
+        # selected_wavelengths = st.multiselect(
+        #     "Select Wavelengths to Track Over Time",
+        #     options=unique_wavelengths,
+        #     default=[unique_wavelengths[0]]
+        # )
+
+        # Assuming unique_wavelengths is a list of integers or floats
+        min_wavelength = min(unique_wavelengths)
+        max_wavelength = max(unique_wavelengths)
+        
+        # Allow the user to input min and max values manually
+        user_min = st.number_input(
+            "Minimum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength
         )
-    
+        user_max = st.number_input(
+            "Maximum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=max_wavelength
+        )
+        
+        # Ensure the range is valid
+        if user_min > user_max:
+            st.warning("Minimum wavelength must be less than or equal to maximum wavelength.")
+            selected_wavelengths = []
+        else:
+            # Filter unique_wavelengths based on the user input range
+            selected_wavelengths = [w for w in unique_wavelengths if user_min <= w <= user_max]
+        
+                    
         agg_option = st.radio("Aggregation Method", options=["Individual", "Mean", "Sum"], horizontal=True)
     
         if selected_wavelengths:
