@@ -156,25 +156,49 @@ if uploaded_ok and uploaded_nok:
         #     default=[unique_wavelengths[0]]
         # )
 
-        # Assuming unique_wavelengths is a list of integers or floats
+        # Assuming unique_wavelengths is a list of numbers (ints or floats)
         min_wavelength = min(unique_wavelengths)
         max_wavelength = max(unique_wavelengths)
         
-        # Allow the user to input min and max values manually
-        user_min = st.number_input(
-            f"Minimum Wavelength (min: {min_wavelength})", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength
-        )
-        user_max = st.number_input(
-            f"Maximum Wavelength (max: {max_wavelength})", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength+100
+        # Initialize session state for min and max if not already set
+        if 'user_min' not in st.session_state:
+            st.session_state.user_min = min_wavelength
+        if 'user_max' not in st.session_state:
+            st.session_state.user_max = max_wavelength
+        
+        # Define callbacks to update max when min is changed
+        def on_min_change():
+            # If new min is higher than current max, update max to min + 100 (clamped)
+            new_min = st.session_state.user_min
+            if new_min > st.session_state.user_max:
+                st.session_state.user_max = min(new_min + 100, max_wavelength)
+        
+        # Input fields with callbacks
+        st.number_input(
+            f"Minimum Wavelength (min: {min_wavelength})",
+            min_value=min_wavelength,
+            max_value=max_wavelength,
+            key="user_min",
+            on_change=on_min_change
         )
         
-        # Ensure the range is valid
-        if user_min > user_max:
+        st.number_input(
+            f"Maximum Wavelength (max: {max_wavelength})",
+            min_value=min_wavelength,
+            max_value=max_wavelength,
+            key="user_max"
+        )
+        
+        # Final selected wavelengths
+        if st.session_state.user_min > st.session_state.user_max:
             st.warning("Minimum wavelength must be less than or equal to maximum wavelength.")
             selected_wavelengths = []
         else:
-            # Filter unique_wavelengths based on the user input range
-            selected_wavelengths = [w for w in unique_wavelengths if user_min <= w <= user_max]
+            selected_wavelengths = [
+                w for w in unique_wavelengths 
+                if st.session_state.user_min <= w <= st.session_state.user_max
+            ]
+
         
                     
         agg_option = st.radio("Aggregation Method", options=["Individual", "Mean", "Sum"], horizontal=True)
