@@ -199,8 +199,6 @@ if uploaded_ok and uploaded_nok:
                 if st.session_state.user_min <= w <= st.session_state.user_max
             ]
 
-        
-                    
         agg_option = st.radio("Aggregation Method", options=["Individual", "Mean", "Sum"], horizontal=True)
     
         if selected_wavelengths:
