@@ -162,10 +162,10 @@ if uploaded_ok and uploaded_nok:
         
         # Allow the user to input min and max values manually
         user_min = st.number_input(
-            "Minimum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength
+            f"Minimum Wavelength (min: {min_wavelength})", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength
         )
         user_max = st.number_input(
-            "Maximum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength+100
+            f"Maximum Wavelength (max: {max_wavelength})", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength+100
         )
         
         # Ensure the range is valid
