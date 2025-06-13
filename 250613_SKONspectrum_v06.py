@@ -165,7 +165,7 @@ if uploaded_ok and uploaded_nok:
             "Minimum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength
         )
         user_max = st.number_input(
-            "Maximum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=max_wavelength
+            "Maximum Wavelength", min_value=min_wavelength, max_value=max_wavelength, value=min_wavelength+100
         )
         
         # Ensure the range is valid
